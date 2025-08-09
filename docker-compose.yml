@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_konecta
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fullstackkonecta
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: password123
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - konecta_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend_konecta
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      DB_HOST: mysql
+      DB_NAME: fullstackkonecta
+      DB_USER: app_user
+      DB_PASS: password123
+      JWT_SECRET: pass123
+      PORT: 4000
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - konecta_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend_konecta
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - konecta_net
+
+volumes:
+  db_data:
+
+networks:
+  konecta_net:
